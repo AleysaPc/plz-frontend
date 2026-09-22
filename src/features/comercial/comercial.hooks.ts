@@ -198,7 +198,44 @@ export function useUpdateCuentaComercial() {
     },
   });
 }
+export function useDesactivarCuentaComercial() {
+  const queryClient = useQueryClient();
 
+  return useMutation({
+    mutationFn: (id: number) =>
+      cuentasComercialesApi.desactivar(id),
+
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({
+        queryKey: comercialQueryKeys.cuentas(),
+      });
+
+      queryClient.setQueryData(
+        comercialQueryKeys.cuenta(data.id),
+        data,
+      );
+    },
+  });
+}
+export function useActivarCuentaComercial() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: number) =>
+      cuentasComercialesApi.activar(id),
+
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({
+        queryKey: comercialQueryKeys.cuentas(),
+      });
+
+      queryClient.setQueryData(
+        comercialQueryKeys.cuenta(data.id),
+        data,
+      );
+    },
+  });
+}
 export function useDeleteCuentaComercial() {
   const queryClient = useQueryClient();
 
@@ -220,10 +257,15 @@ export function useDeleteCuentaComercial() {
 // ============================================================
 // EJECUTIVOS COMERCIALES
 // ============================================================
-export function useEjecutivosComerciales() {
+export function useEjecutivosComerciales(roleId: number) {
   return useQuery({
-    queryKey: comercialQueryKeys.ejecutivos(),
-    queryFn: () => ejecutivosComercialesApi.list(),
+    queryKey: [
+      ...comercialQueryKeys.ejecutivos(),
+      roleId,
+    ],
+    queryFn: () =>
+      ejecutivosComercialesApi.list(roleId),
+    enabled: !!roleId,
   });
 }
 // ============================================================

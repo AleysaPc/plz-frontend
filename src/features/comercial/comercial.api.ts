@@ -79,18 +79,39 @@ export const cuentasComercialesApi = {
     );
   },
 
+  desactivar: async (id: number): Promise<CuentaComercial> => {
+    return api.patch<CuentaComercial>(
+      `/comercial/cuentas-comerciales/${id}/desactivar/`,
+    );
+  },
+
+  activar: async (id: number): Promise<CuentaComercial> => {
+  return api.patch<CuentaComercial>(
+    `/comercial/cuentas-comerciales/${id}/activar/`,
+  );
+},
+
   remove: async (id: number): Promise<void> => {
     await api.delete(`/comercial/cuentas-comerciales/${id}/`);
   },
 };
+export interface UsuariosPorRolResponse {
+  rol: {
+    id: number;
+    name: string;
+  };
+  usuarios: EjecutivoComercial[];
+}
 
 // ============================================================
 // EJECUTIVOS COMERCIAL
 // ============================================================
 export const ejecutivosComercialesApi = {
-  list: async (): Promise<EjecutivoComercial[]> => {
-    return api.get<EjecutivoComercial[]>(
-      "/usuarios/ejecutivos-comerciales/",
+  list: async (
+    roleId: number,
+  ): Promise<UsuariosPorRolResponse> => {
+    return api.get<UsuariosPorRolResponse>(
+      `/usuarios/ejecutivos-comerciales/?role_id=${roleId}`,
     );
   },
 };

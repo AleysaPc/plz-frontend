@@ -17,6 +17,7 @@ import {
 import type {
   EstadoSolicitud,
   SolicitudComercial,
+  EjecutivoComercial,
 } from "../comercial.types";
 
 export default function RequerimientosListPage() {
@@ -32,9 +33,15 @@ export default function RequerimientosListPage() {
   const { data: cuentas = [] } =
     useCuentasComerciales();
 
-  const { data: ejecutivos = [] } =
-    useEjecutivosComerciales();
+  const ROLE_EJECUTIVO_VENTAS_ID = 2;
 
+  const { data: ejecutivosResponse } =
+    useEjecutivosComerciales(
+      ROLE_EJECUTIVO_VENTAS_ID,
+    );
+
+  const ejecutivos =
+    ejecutivosResponse?.usuarios ?? [];
   // Más recientes primero
   const requerimientos = useMemo(() => {
     return [...(data ?? [])].sort(
@@ -237,27 +244,22 @@ function RequerimientoRow({
   cuentas: ReturnType<typeof useCuentasComerciales>["data"] extends infer T
   ? NonNullable<T>
   : never;
-  ejecutivos: ReturnType<typeof useEjecutivosComerciales>["data"] extends infer T
-  ? NonNullable<T>
-  : never;
+  ejecutivos: EjecutivoComercial[];
   onView: () => void;
 }) {
   const cuenta = cuentas.find(
-    (item) =>
-      item.id === requerimiento.cuenta_comercial,
+    (item) => item.id === requerimiento.cuenta_comercial,
   );
 
   const ejecutivo = cuenta
     ? ejecutivos.find(
-      (item) =>
-        item.id === cuenta.ejecutivo_asignado,
+      (item) => item.id === cuenta.ejecutivo_asignado,
     )
     : undefined;
 
   const nombreCliente = cuenta
     ? cuenta.razon_social ||
-    `${cuenta.nombres ?? ""} ${cuenta.apellido_paterno ?? ""
-      }`.trim() ||
+    `${cuenta.nombres ?? ""} ${cuenta.apellido_paterno ?? ""}`.trim() ||
     "Sin nombre"
     : "Cliente no encontrado";
 
@@ -266,23 +268,26 @@ function RequerimientoRow({
     : "Sin asignar";
 
   return (
-    <div className="grid grid-cols-[70px_2fr_2fr_1fr_1.2fr_1.2fr_1.5fr_1fr_60px] items-center gap-4 border-b border-border px-5 py-4 hover:bg-secondary/100">
-
+    <div
+      onClick={onView}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          onView();
+        }
+      }}
+      className="grid cursor-pointer grid-cols-[70px_2fr_2fr_1fr_1.2fr_1.2fr_1.5fr_1fr_60px] items-center gap-4 border-b border-border px-5 py-4 transition-colors hover:bg-secondary/50"
+    >
       {/* N.º */}
-      <button
-        type="button"
-        onClick={onView}
-        className="text-left text-sm font-semibold text-foreground"
-      >
+
+      <span className="text-sm font-semibold text-foreground">
         REQ-{String(requerimiento.id).padStart(3, "0")}
-      </button>
+      </span>
 
       {/* Cliente */}
-      <button
-        type="button"
-        onClick={onView}
-        className="min-w-0 text-left"
-      >
+
+      <div className="min-w-0">
         <p className="truncate text-sm font-semibold text-foreground">
           {nombreCliente}
         </p>
@@ -290,23 +295,17 @@ function RequerimientoRow({
         <p className="mt-1 text-xs text-muted-foreground">
           ID cliente: {requerimiento.cuenta_comercial}
         </p>
-      </button>
+      </div>
 
       {/* Descripción */}
-      <button
-        type="button"
-        onClick={onView}
-        className="truncate text-left text-sm text-foreground"
-      >
+
+      <span className="truncate text-left text-sm text-foreground">
         {requerimiento.descripcion || "Sin descripción"}
-      </button>
+      </span>
 
       {/* Cantidad */}
-      <button
-        type="button"
-        onClick={onView}
-        className="text-left"
-      >
+
+      <div>
         {requerimiento.cantidad_unidades ? (
           <span className="text-sm font-medium text-foreground">
             {requerimiento.cantidad_unidades}
@@ -320,27 +319,43 @@ function RequerimientoRow({
             —
           </span>
         )}
-      </button>
+      </div>
 
       {/* Estado */}
-      <EstadoSelector
-        requerimiento={requerimiento}
-      />
+
+      <div
+        onClick={(event) => event.stopPropagation()}
+      >
+        <EstadoSelector
+          requerimiento={requerimiento}
+        />
+      </div>
 
       {/* Prioridad */}
-      <PrioridadBadge
-        prioridad={requerimiento.prioridad}
-      />
+
+      <div
+        onClick={(event) => event.stopPropagation()}
+      >
+        <PrioridadBadge
+          prioridad={requerimiento.prioridad}
+        />
+      </div>
 
       {/* Responsable */}
+
       <p className="truncate text-sm font-medium text-foreground">
         {nombreEjecutivo}
       </p>
 
       {/* Entrega */}
+
       <p className="text-sm text-foreground">
         {formatearFecha(requerimiento.fecha_entrega)}
       </p>
+
+      {/* Acción */}
+
+      <div />
     </div>
   );
 }
@@ -454,7 +469,6 @@ function EstadoSelector({
         }
         className={`inline-flex items-center gap-2 rounded-full px-2.5 py-1.5 text-xs font-medium transition-opacity hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60 ${estadoActual.className}`}
       >
-
         {estadoActual.label}
 
         <ChevronDown className="h-3 w-3" />
