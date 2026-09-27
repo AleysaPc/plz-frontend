@@ -19,13 +19,18 @@ export function AppLayout() {
   const headerUser = user
     ? {
         name:
-          `${user.first_name} ${user.last_name}`.trim() ||
-          user.username,
-        email: user.email,
-        role: roles[0]?.name,
+          `${user.first_name ?? ""} ${user.last_name ?? ""}`.trim() ||
+          user.username ||
+          "Usuario",
+
+        email: user.email ?? "",
+
+        role: roles?.[0]?.name ?? "",
+
         initials:
-          `${user.first_name?.[0] ?? ""}${user.last_name?.[0] ?? ""}` ||
-          user.username[0]?.toUpperCase(),
+          `${user.first_name?.[0] ?? ""}${user.last_name?.[0] ?? ""}`.toUpperCase() ||
+          user.username?.[0]?.toUpperCase() ||
+          "U",
       }
     : undefined;
 
@@ -98,9 +103,7 @@ function SidebarBrand() {
         I
       </div>
 
-      <span className="truncate font-semibold text-white">
-        INPLAZ
-      </span>
+      <span className="truncate font-semibold text-white">INPLAZ</span>
     </div>
   );
 }
