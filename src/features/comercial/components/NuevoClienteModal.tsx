@@ -30,15 +30,7 @@ export default function NuevoClienteModal({
 }: NuevoClienteModalProps) {
   const createCuenta = useCreateCuentaComercial();
   const updateCuenta = useUpdateCuentaComercial();
-
-  const ROLE_EJECUTIVO_VENTAS_ID = 2;
-
-  const { data,
-    isLoading: ejecutivosLoading,
-  } = useEjecutivosComerciales(ROLE_EJECUTIVO_VENTAS_ID);
-
-  const ejecutivos = data?.usuarios ?? [];
-
+  const { data: ejecutivos, isLoading: ejecutivosLoading, } = useEjecutivosComerciales();
   const isEditing = !!client;
 
   const [form, setForm] = useState<CuentaComercialCreate>({
@@ -101,7 +93,7 @@ export default function NuevoClienteModal({
       );
     }
   };
-  if (!open) {
+   if(!open){
     return null;
   }
 
@@ -179,12 +171,11 @@ export default function NuevoClienteModal({
               {/* Número de documento */}
               <div>
                 <label className="mb-1.5 block text-sm font-medium">
-                  Número de documento *
+                  Número de documento
                 </label>
 
                 <input
                   type="text"
-                  required
                   value={form.numero_documento ?? ""}
                   onChange={(e) =>
                     handleChange(
@@ -407,41 +398,41 @@ export default function NuevoClienteModal({
                   </p>
                 </div>
               </div>
+              </div>
+
+              {/* Error */}
+              {(createCuenta.isError || updateCuenta.isError) && (
+                <p className="mt-4 text-sm text-destructive">
+                  {isEditing
+                    ? "No se pudo actualizar el cliente. Verifica los datos e inténtalo nuevamente."
+                    : "No se pudo crear el cliente. Verifica los datos e inténtalo nuevamente."}
+                </p>
+              )}
             </div>
 
-            {/* Error */}
-            {(createCuenta.isError || updateCuenta.isError) && (
-              <p className="mt-4 text-sm text-destructive">
-                {isEditing
-                  ? "No se pudo actualizar el cliente. Verifica los datos e inténtalo nuevamente."
-                  : "No se pudo crear el cliente. Verifica los datos e inténtalo nuevamente."}
-              </p>
-            )}
-          </div>
+            {/* Footer */}
+            <div className="flex justify-end gap-2 border-t border-border px-6 py-4">
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={isPending}
+                className="rounded-md border border-border px-4 py-2 text-sm hover:bg-secondary disabled:opacity-50"
+              >
+                Cancelar
+              </button>
 
-          {/* Footer */}
-          <div className="flex justify-end gap-2 border-t border-border px-6 py-4">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={isPending}
-              className="rounded-md border border-border px-4 py-2 text-sm hover:bg-secondary disabled:opacity-50"
-            >
-              Cancelar
-            </button>
-
-            <button
-              type="submit"
-              disabled={isPending}
-              className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {isPending
-                ? "Guardando..."
-                : isEditing
-                  ? "Guardar cambios"
-                  : "Crear cliente"}
-            </button>
-          </div>
+              <button
+                type="submit"
+                disabled={isPending}
+                className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isPending
+                  ? "Guardando..."
+                  : isEditing
+                    ? "Guardar cambios"
+                    : "Crear cliente"}
+              </button>
+            </div>
         </form>
       </div>
     </div>

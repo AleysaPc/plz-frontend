@@ -1,4 +1,5 @@
 import { useNavigate, useParams } from "react-router-dom";
+import { useState } from "react";
 import {
     ArrowLeft,
     Check,
@@ -8,16 +9,27 @@ import {
     Sparkles,
     Truck,
     UserRound,
+    MessageCircle,
+    Pencil,
 } from "lucide-react";
 
 import { useSolicitudComercial } from "../comercial.hooks";
-import { useProductosCategorias } from "@/features/productos/productos.hook";
+import { useProductosCategorias } from "@/features/productos/productos.hooks";
+import ComunicacionesModal from "@/features/comercial/components/ComunicacionModal";
+import EditarRequerimientoModal from "@/features/comercial/components/EditarRequerimientoModal";
 
 export default function RequerimientoDetallePage() {
     const navigate = useNavigate();
     const { id } = useParams<{ id: string }>();
 
     const solicitudId = Number(id);
+
+    //MOSTRAR COMUNICACIÓN
+    const [showComunicaciones, setShowComunicaciones] = useState(false);
+
+    //MOSTRAR EDICIÓN
+    const [showEditar, setShowEditar] = useState(false);
+
 
     const { data, isLoading, isError } =
         useSolicitudComercial(solicitudId);
@@ -94,16 +106,35 @@ export default function RequerimientoDetallePage() {
 
                     <div>
                         <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                            Solicitud #{solicitud.id}
+                            <span>Solicitud #{solicitud.id}  </span> 
+                            <EstadoBadge estado={solicitud.estado}/>
                         </p>
-
                         <h1 className="text-2xl font-bold tracking-tight text-foreground">
                             Detalle del Requerimiento
                         </h1>
                     </div>
                 </div>
 
-                <EstadoBadge estado={solicitud.estado} />
+                <div className="flex flex-wrap items-center gap-3">
+                    <button
+                        type="button"
+                        onClick={() => setShowEditar(true)}
+                        className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-medium text-foreground shadow-sm transition hover:bg-muted"
+                    >
+                        <Pencil className="h-4 w-4" />
+                        Editar requerimiento
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={() => setShowComunicaciones(true)}
+                        className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-medium text-foreground shadow-sm transition hover:bg-muted"
+                    >
+                        <MessageCircle className="h-4 w-4" />
+                        Ver comunicaciones
+                    </button>
+
+                </div>
             </header>
 
             {/* ============================================================
@@ -206,8 +237,8 @@ export default function RequerimientoDetallePage() {
                 </InfoCard>
 
                 {/* ========================================================
-                    PRODUCTO
-                   ======================================================== */}
+    PRODUCTO
+   ======================================================== */}
 
                 {especificacionProducto && (
                     <InfoCard
@@ -242,7 +273,9 @@ export default function RequerimientoDetallePage() {
 
                             <InfoItem
                                 label="Color"
-                                value={especificacionProducto.color_bolsa}
+                                value={
+                                    especificacionProducto.color_bolsa || "—"
+                                }
                             />
 
                             <InfoItem
@@ -251,7 +284,64 @@ export default function RequerimientoDetallePage() {
                                     especificacionProducto.opacidad,
                                 )}
                             />
+
+                            <InfoItem
+                                label="Tipo de capa"
+                                value={getCapasLabel(
+                                    especificacionProducto.capas,
+                                )}
+                            />
+
+                            <InfoItem
+                                label="Cara impresión"
+                                value={getCaraImpresionLabel(
+                                    especificacionProducto.cara_impresion,
+                                )}
+                            />
                         </div>
+
+                        {/* ========================================================
+            COLORES Y CANTIDADES
+           ======================================================== */}
+
+                        {especificacionProducto.variantes_color?.length > 0 && (
+                            <div className="mt-6 border-t border-border pt-5">
+                                <div className="mb-4">
+                                    <h4 className="text-sm font-semibold">
+                                        Colores y cantidades
+                                    </h4>
+
+                                    <p className="mt-1 text-xs text-muted-foreground">
+                                        Colores solicitados y cantidad correspondiente.
+                                    </p>
+                                </div>
+
+                                <div className="space-y-3">
+                                    {especificacionProducto.variantes_color.map(
+                                        (variante, index) => (
+                                            <div
+                                                key={variante.id ?? index}
+                                                className="rounded-xl border border-border bg-muted/20 p-4"
+                                            >
+                                                <div className="grid gap-4 sm:grid-cols-2">
+                                                    <InfoItem
+                                                        label={`Color ${index + 1}`}
+                                                        value={variante.color || "—"}
+                                                    />
+
+                                                    <InfoItem
+                                                        label="Cantidad"
+                                                        value={getColorCantidadLabel(
+                                                            variante.cantidad,
+                                                        )}
+                                                    />
+                                                </div>
+                                            </div>
+                                        ),
+                                    )}
+                                </div>
+                            </div>
+                        )}
                     </InfoCard>
                 )}
 
@@ -406,18 +496,37 @@ export default function RequerimientoDetallePage() {
                                 BOBINA
                                ================================================= */}
 
+                            {/* BOBINA */}
                             {especificacionBobina && (
                                 <div>
-                                    <SectionTitle>
+                                    <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                                         Características de bobina
-                                    </SectionTitle>
+                                    </p>
 
-                                    <div className="grid gap-x-6 gap-y-5 sm:grid-cols-2">
+                                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                                         <InfoItem
-                                            label="Ancho"
+                                            label="Ancho de bobina"
                                             value={
                                                 especificacionBobina.ancho
                                                     ? `${especificacionBobina.ancho} cm`
+                                                    : "—"
+                                            }
+                                        />
+
+                                        <InfoItem
+                                            label="Longitud"
+                                            value={
+                                                especificacionBobina.longitud
+                                                    ? `${especificacionBobina.longitud} m`
+                                                    : "—"
+                                            }
+                                        />
+
+                                        <InfoItem
+                                            label="Peso"
+                                            value={
+                                                especificacionBobina.peso
+                                                    ? `${especificacionBobina.peso} kg`
                                                     : "—"
                                             }
                                         />
@@ -441,12 +550,8 @@ export default function RequerimientoDetallePage() {
                                         />
 
                                         <InfoItem
-                                            label="Peso"
-                                            value={
-                                                especificacionBobina.peso
-                                                    ? `${especificacionBobina.peso} kg`
-                                                    : "—"
-                                            }
+                                            label="Tipo núcleo"
+                                            value={especificacionBobina.tipo_nucleo || "—"}
                                         />
                                     </div>
                                 </div>
@@ -486,6 +591,13 @@ export default function RequerimientoDetallePage() {
                                             label="Tipo"
                                             value={getTipoImpresionLabel(
                                                 especificacionProducto.tipo_impresion,
+                                            )}
+                                        />
+
+                                        <InfoItem
+                                            label="Tratamiento"
+                                            value={getTratamientoImpresionLabel(
+                                                especificacionProducto.tratamiento_impresion,
                                             )}
                                         />
 
@@ -645,6 +757,28 @@ export default function RequerimientoDetallePage() {
                     Regresar
                 </button>
             </footer>
+
+            {showComunicaciones && (
+                <ComunicacionesModal
+                    open={showComunicaciones}
+                    solicitudId={solicitudId}
+                    onClose={() => setShowComunicaciones(false)}
+
+                />
+            )}
+
+            {showEditar && (
+                <EditarRequerimientoModal
+                    open={showEditar}
+                    requerimientoId={solicitudId}
+                    onClose={() => setShowEditar(false)}
+                    onSuccess={() => {
+                        setShowEditar(false);
+                        // Recargar los datos después de editar
+                        window.location.reload();
+                    }}
+                />
+            )}
         </div>
     );
 }
@@ -829,6 +963,11 @@ function getPrioridadLabel(value: string) {
 
     return labels[value] ?? value;
 }
+function getColorCantidadLabel(cantidad: string) {
+    if (!cantidad) return "—";
+
+    return `${cantidad} unidades`;
+}
 
 function getMaterialLabel(value: string) {
     const labels: Record<string, string> = {
@@ -859,6 +998,35 @@ function getTipoImpresionLabel(value: string) {
     };
 
     return labels[value] ?? value;
+}
+
+function getTratamientoImpresionLabel(value: string) {
+    const labels: Record<string, string> = {
+        solido: "Sólido",
+        degradado: "Degradado",
+        trameado: "Trameado",
+    };
+
+    return labels[value] ?? (value || "—");
+}
+function getCaraImpresionLabel(value: string) {
+    const labels: Record<string, string> = {
+        anverso: "Anverso",
+        reverso: "Reverso",
+        ambos: "Ambos",
+    };
+
+    return labels[value] ?? value;
+}
+
+function getCapasLabel(value: string) {
+    const labels: Record<string, string> = {
+        monocapa: "Monocapa",
+        bicapa: "Bicapa",
+        tricapa: "Tricapa",
+    };
+
+    return labels[value] ?? (value || "—");
 }
 
 function getPosicionLabel(value: string) {

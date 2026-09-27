@@ -40,6 +40,9 @@ import type {
   SolicitudComercialUpdate,
   EjecutivoComercial,
   RequerimientoDetalle,
+  VarianteColorSolicitada,
+  VarianteColorSolicitadaCreate,
+  VarianteColorSolicitadaUpdate, 
 } from "./comercial.types";
 
 // ============================================================
@@ -95,23 +98,14 @@ export const cuentasComercialesApi = {
     await api.delete(`/comercial/cuentas-comerciales/${id}/`);
   },
 };
-export interface UsuariosPorRolResponse {
-  rol: {
-    id: number;
-    name: string;
-  };
-  usuarios: EjecutivoComercial[];
-}
 
 // ============================================================
 // EJECUTIVOS COMERCIAL
 // ============================================================
 export const ejecutivosComercialesApi = {
-  list: async (
-    roleId: number,
-  ): Promise<UsuariosPorRolResponse> => {
-    return api.get<UsuariosPorRolResponse>(
-      `/usuarios/ejecutivos-comerciales/?role_id=${roleId}`,
+  list: async (): Promise<EjecutivoComercial[]> => {
+    return api.get<EjecutivoComercial[]>(
+      "/usuarios/ejecutivos-comerciales/",
     );
   },
 };
@@ -259,6 +253,38 @@ export const especificacionesProductoApi = {
 
 
 // ============================================================
+// VARIANTES DE COLOR SOLICITADAS
+// ============================================================
+
+export const variantesColorApi = {
+  create: async (
+    data: VarianteColorSolicitadaCreate,
+  ): Promise<VarianteColorSolicitada> => {
+    return api.post<VarianteColorSolicitada>(
+      "/comercial/variante-color-solicitada/",
+      data,
+    );
+  },
+
+  update: async (
+    id: number,
+    data: VarianteColorSolicitadaUpdate,
+  ): Promise<VarianteColorSolicitada> => {
+    return api.patch<VarianteColorSolicitada>(
+      `/comercial/variante-color-solicitada/${id}/`,
+      data,
+    );
+  },
+
+  remove: async (id: number): Promise<void> => {
+    await api.delete(
+      `/comercial/variante-color-solicitada/${id}/`,
+    );
+  },
+};
+
+
+// ============================================================
 // ESPECIFICACIÓN DE BOLSA SOLICITADA
 // ============================================================
 
@@ -363,8 +389,8 @@ export const especificacionesBobinaApi = {
 export const comunicacionesApi = {
   list: async (
     params?: ApiQueryParams,
-  ): Promise<PaginatedResponse<Comunicacion>> => {
-    return api.get<PaginatedResponse<Comunicacion>>(
+  ): Promise<Comunicacion[]> => {      /*Promise<PaginatedResponse<Comunicacion>> => {*/
+     return api.get<Comunicacion[]>(   /*return api.get<PaginatedResponse<Comunicacion>>(*/
       "/comercial/comunicaciones/",
       { params },
     );

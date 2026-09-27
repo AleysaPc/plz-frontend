@@ -257,15 +257,10 @@ export function useDeleteCuentaComercial() {
 // ============================================================
 // EJECUTIVOS COMERCIALES
 // ============================================================
-export function useEjecutivosComerciales(roleId: number) {
+export function useEjecutivosComerciales() {
   return useQuery({
-    queryKey: [
-      ...comercialQueryKeys.ejecutivos(),
-      roleId,
-    ],
-    queryFn: () =>
-      ejecutivosComercialesApi.list(roleId),
-    enabled: !!roleId,
+    queryKey: comercialQueryKeys.ejecutivos(),
+    queryFn: () => ejecutivosComercialesApi.list(),
   });
 }
 // ============================================================

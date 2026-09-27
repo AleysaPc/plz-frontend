@@ -77,7 +77,7 @@ export interface CuentaComercialCreate {
     razon_social?: string;
 
     documento_identidad?: DocumentoIdentidad | null;
-    numero_documento?: string;
+    numero_documento?: string | null;
 
     telefono?: string;
     correo?: string;
@@ -113,6 +113,8 @@ export interface ActividadComercial {
   id: number;
 
   cuenta_comercial: number;
+  solicitud_comercial: number | null;
+
   usuario: number;
   ejecutivo_asignado: string;
 
@@ -131,6 +133,7 @@ export interface ActividadComercial {
 
 export interface ActividadComercialCreate {
   cuenta_comercial: number;
+  solicitud_comercial?: number | null;
   tipo: TipoActividad;
   descripcion: string;
   fecha_programada: string;
@@ -214,7 +217,28 @@ export interface SolicitudComercialCreate {
 
 export type SolicitudComercialUpdate =
   Partial<SolicitudComercialCreate>;
+// ============================================================
+// VARIANTE DE COLOR SOLICITADA
+// ============================================================
 
+export interface VarianteColorSolicitada {
+  id: number;
+  especificacion_producto_solicitado: number;
+  color: string;
+  cantidad: string;
+  created_at: string;
+  updated_at: string;
+}
+export interface VarianteColorSolicitadaCreate {
+  id?: number;
+  especificacion_producto_solicitado?: number;
+  color: string;
+  cantidad: string;
+  created_at?: string;
+  updated_at?: string;
+}
+export type VarianteColorSolicitadaUpdate =
+  Partial<VarianteColorSolicitadaCreate>;
 // ============================================================
 // Categoria Producto 
 // ============================================================
@@ -223,6 +247,7 @@ export type ProductType =
   | "roll"
   | "other"
   | null;
+  
 // ============================================================
 // ESPECIFICACIÓN DE PRODUCTO SOLICITADO
 // ============================================================
@@ -269,9 +294,9 @@ export type TratamientoAcabadoEspecial =
 
 export interface EspecificacionProductoSolicitado {
   id: number;
-
   solicitud_comercial: number;
   categoria_producto: number;
+  cara_impresion: CaraImpresion | "";
   material: MaterialProducto;
   apto_alimento: boolean;
   micraje: string | null;
@@ -279,14 +304,17 @@ export interface EspecificacionProductoSolicitado {
   impresion: boolean;
   color_impresion: string[];
   tipo_impresion: TipoImpresion;
+  tratamiento_impresion: TratamientoImpresion;
   posicion_impresion: PosicionImpresion;
   distancia_impresion_superior: string | null;
   distancia_impresion_inferior: string | null;
   distancia_impresion_izquierda: string | null;
   distancia_impresion_derecha: string | null;
   otras_caracteristicas: string;
+  variantes_color: VarianteColorSolicitada[];
   opacidad: Opacidad;
-  tratamientos_acabados_especiales: TratamientoAcabadoEspecial[]; 
+  tratamientos_acabados_especiales: TratamientoAcabadoEspecial[];
+  capas: TipoCapa;
   created_at: string;
   updated_at: string;
 }
@@ -295,19 +323,24 @@ export interface EspecificacionProductoSolicitadoCreate {
   solicitud_comercial: number;
   categoria_producto: number;
   material: MaterialProducto;
+  capas: TipoCapa;
   apto_alimento: boolean;
   micraje?: string | null;
   color_bolsa: string;
   impresion: boolean;
   color_impresion: string[];
   tipo_impresion: TipoImpresion;
+  tratamiento_impresion: TratamientoImpresion;
   posicion_impresion?: PosicionImpresion;
   distancia_impresion_superior?: string | null;
   distancia_impresion_inferior?: string | null;
   distancia_impresion_izquierda?: string | null;
   distancia_impresion_derecha?: string | null;
   otras_caracteristicas?: string;
-  tratamientos_acabados_especiales?: TratamientoAcabadoEspecial[]; 
+  cara_impresion?: CaraImpresion | "";
+  opacidad?: Opacidad;
+  tratamientos_acabados_especiales?: TratamientoAcabadoEspecial[];
+  variantes_color?: VarianteColorSolicitadaCreate[];
 }
 
 export type EspecificacionProductoSolicitadoUpdate =
@@ -333,6 +366,11 @@ export type TipoSello =
   | "lateral"
   | "ninguno";
 
+export type TipoPestana =
+  | "sin_pestana"
+  | "superior"
+  | "inferior"
+  | "ambas"
 export interface EspecificacionBolsaSolicitada {
   id: number;
 
@@ -354,7 +392,7 @@ export interface EspecificacionBolsaSolicitada {
   tipo_troquel: TipoTroquel;
   tipo_sello: TipoSello;
 
-  pestana: string;
+  pestana: TipoPestana;
 
   otras_caracteristicas: string;
 
@@ -396,13 +434,11 @@ export type EspecificacionBolsaSolicitadaUpdate =
 
 export interface EspecificacionBobinaSolicitada {
   id: number;
-
   especificacion_producto_solicitado: number;
-
   ancho: string;
-
   diametro: string | null;
   diametro_nucleo: string | null;
+  longitud: string | null;
 
   tipo_nucleo: string;
 
@@ -421,6 +457,7 @@ export interface EspecificacionBobinaSolicitadaCreate {
 
   diametro?: string | null;
   diametro_nucleo?: string | null;
+  longitud?: string | null;
 
   tipo_nucleo: string;
 
@@ -438,14 +475,24 @@ export type EspecificacionBobinaSolicitadaUpdate =
 // ============================================================
 
 export type TipoComunicacion = 
-  | "enviado"
-  | "recibido";
+  | "llamada"
+  | "correo"
+  | "mensaje"
+  | "reunion"
+  | "visita"
+  | "otro";
 
 export type MedioComunicacion =
-  | "llamada"
+  | "telefono"
+  | "email"
   | "whatsapp"
-  | "correo"
-  | "reunion";
+  | "presencial"
+  | "videollamada"
+  | "otro";
+
+export type DireccionComunicacion =
+  | "saliente"
+  | "entrante";
 
 export interface Comunicacion {
   id: number;
@@ -453,6 +500,7 @@ export interface Comunicacion {
   usuario: number;
   tipo: string;
   medio: string;
+  direccion: DireccionComunicacion | null;
   asunto: string | null;
   contenido: string;
   created_at: string;
@@ -461,10 +509,9 @@ export interface Comunicacion {
 
 export interface ComunicacionCreate {
   solicitud_comercial: number;
-
   tipo: string;
   medio: string;
-
+  direccion: DireccionComunicacion;
   asunto?: string | null;
   contenido: string;
 }
@@ -473,6 +520,7 @@ export type ComunicacionUpdate = {
   solicitud_comercial?: number;
   tipo?: TipoComunicacion;
   medio?: MedioComunicacion;
+  direccion?: DireccionComunicacion;
   asunto?: string | null;
   contenido?: string;
 }

@@ -3,7 +3,6 @@ import { useState, type ReactNode } from "react";
 
 import {
   ArrowLeft,
-  Building2,
   CalendarDays,
   CalendarClock,
   CheckCircle2,
@@ -15,6 +14,7 @@ import {
   Phone,
   ShoppingCart,
   User,
+  MessageCircle,
 } from "lucide-react";
 
 import {
@@ -22,6 +22,7 @@ import {
   useActividadesComerciales,
   useSolicitudesComerciales,
   usePedidos,
+  useDeleteActividadComercial,
 } from "../comercial.hooks";
 
 import type {
@@ -32,12 +33,17 @@ import type {
 } from "../comercial.types";
 
 import NuevoClienteModal from "@/features/comercial/components/NuevoClienteModal";
-
+import ComunicacionesModal from "@/features/comercial/components/ComunicacionModal";
 type DetailTab =
   | "resumen"
   | "actividades"
   | "solicitudes"
   | "pedidos";
+
+import NuevaActividadModal from "@/features/comercial/components/actividades/NuevaActividadModal";
+import ActividadMenu from "@/features/comercial/components/actividades/ActividadMenu";
+import RegistrarComunicacionModal from "@/features/comercial/components/RegistrarComunicacionModal";
+import ConfirmDialog from "../../../components/feedback/ConfirmDialog";
 
 function DetallesCliente() {
   const { id } = useParams<{ id: string }>();
@@ -120,6 +126,28 @@ function DetallesCliente() {
    * Pestaña activa dentro del detalle del cliente.
    */
   const [activeTab, setActiveTab] = useState<DetailTab>("resumen");
+
+  /**
+   * ESTADOS PARA ACCIONES DE LA ACTIVIDAD
+   */
+  const [actividadEditar, setActividadEditar] =
+    useState<ActividadComercial | null>(null);
+
+  const [actividadEliminar, setActividadEliminar] =
+    useState<ActividadComercial | null>(null);
+
+  const [showRegistrarComunicacion, setShowRegistrarComunicacion] =
+    useState(false);
+
+  /**
+   * HOOK PARA ELIMINAR
+   */
+  const deleteActividad = useDeleteActividadComercial();
+  /**
+   * Pestaña para ver historial comunicaciones
+   */
+  const [solicitudComunicacionId, setSolicitudComunicacionId] =
+    useState<number | null>(null);
 
   /*
    * ============================================================
@@ -270,17 +298,14 @@ function DetallesCliente() {
    * ============================================================
    *
    * Buscamos la primera actividad pendiente/en proceso
-   * cuya fecha todavía no ha pasado.
+   * sin importar si la fecha ya pasó.
    */
-
-  const ahora = new Date();
 
   const proximaActividad = [...actividades]
     .filter(
       (actividad) =>
         actividad.estado !== "completada" &&
-        actividad.estado !== "cancelada" &&
-        new Date(actividad.fecha_programada) >= ahora,
+        actividad.estado !== "cancelada",
     )
     .sort(
       (a, b) =>
@@ -350,6 +375,7 @@ function DetallesCliente() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+
             <button
               type="button"
               onClick={() => setShowEdit(true)}
@@ -612,6 +638,11 @@ function DetallesCliente() {
                       key={actividad.id}
                       actividad={actividad}
                       last={index === array.length - 1}
+                      onEdit={() => setActividadEditar(actividad)}
+                      onDelete={() => setActividadEliminar(actividad)}
+                      onRegistrarComunicacion={() =>
+                        setShowRegistrarComunicacion(true)
+                      }
                     />
                   ))}
               </div>
@@ -661,6 +692,9 @@ function DetallesCliente() {
                       key={solicitud.id}
                       solicitud={solicitud}
                       last={index === array.length - 1}
+                      onViewComunicaciones={(solicitud) => {
+                        setSolicitudComunicacionId(solicitud.id);
+                      }}
                     />
                   ))}
               </div>
@@ -731,12 +765,61 @@ function DetallesCliente() {
           MODAL PARA EDITAR CLIENTE
       ======================================================= */}
 
-      {showEdit && cliente && (
-        <NuevoClienteModal
-          open={showEdit}
-          client={cliente}
-          onClose={() => setShowEdit(false)}
-          onSuccess={() => setShowEdit(false)}
+      {/* MODAL EDITAR ACTIVIDAD */}
+      <NuevaActividadModal
+        open={actividadEditar !== null}
+        actividad={actividadEditar}
+        onClose={() => setActividadEditar(null)}
+      />
+
+      {/* CONFIRMAR ELIMINACIÓN */}
+      <ConfirmDialog
+        open={actividadEliminar !== null}
+        title="Eliminar actividad"
+        description={
+          actividadEliminar
+            ? `¿Estás seguro de eliminar la actividad "${actividadEliminar.descripcion}"? Esta acción no se puede deshacer.`
+            : ""
+        }
+        confirmText="Eliminar"
+        cancelText="Cancelar"
+        loading={deleteActividad.isPending}
+        onConfirm={async () => {
+          if (!actividadEliminar) return;
+
+          try {
+            await deleteActividad.mutateAsync(
+              actividadEliminar.id,
+            );
+
+            setActividadEliminar(null);
+          } catch (error) {
+            console.error(
+              "Error al eliminar actividad:",
+              error,
+            );
+          }
+        }}
+        onCancel={() => setActividadEliminar(null)}
+      />
+
+      {/* REGISTRAR COMUNICACIÓN */}
+      <RegistrarComunicacionModal
+        open={showRegistrarComunicacion}
+        onClose={() =>
+          setShowRegistrarComunicacion(false)
+        }
+      />
+      {/* ======================================================
+          MODAL COMUNICACIONES
+      ======================================================= */}
+      {solicitudComunicacionId !== null && (
+        <ComunicacionesModal
+          open={true}
+          solicitudId={solicitudComunicacionId}
+          titulo="Historial de comunicaciones"
+          subtitulo={`Solicitud #${solicitudComunicacionId}`}
+          onClose={() => setSolicitudComunicacionId(null)}
         />
       )}
     </div>
@@ -924,9 +1007,15 @@ function NextActivityCard({
 function ActivityRow({
   actividad,
   last,
+  onEdit,
+  onDelete,
+  onRegistrarComunicacion,
 }: {
   actividad: ActividadComercial;
   last: boolean;
+  onEdit: () => void;
+  onDelete: () => void;
+  onRegistrarComunicacion: () => void;
 }) {
   return (
     <div
@@ -973,6 +1062,13 @@ function ActivityRow({
           )}
         </div>
       </div>
+      {/*Acciones*/}
+      <ActividadMenu
+        actividad={actividad}
+        onEdit={onEdit}
+        onDelete={onDelete}
+        onRegistrarComunicacion={onRegistrarComunicacion}
+      />
     </div>
   );
 }
@@ -980,74 +1076,81 @@ function ActivityRow({
 function SolicitudRow({
   solicitud,
   last,
+  onViewComunicaciones,
 }: {
   solicitud: SolicitudComercial;
   last: boolean;
+  onViewComunicaciones: (solicitud: SolicitudComercial) => void;
 }) {
   return (
-    <Link
-      to={`/comercial/requerimientos/${solicitud.id}`}
-      className={`block transition-colors hover:bg-secondary/40 ${!last ? "border-b border-border" : ""
+    <div
+      className={`flex gap-4 px-6 py-4 transition-colors hover:bg-secondary/40 ${!last ? "border-b border-border" : ""
         }`}
     >
-      <div className="flex gap-4 px-6 py-4">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-          <ClipboardList className="h-4 w-4" />
-        </div>
-
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <p className="text-sm font-medium text-foreground">
-                Solicitud #{solicitud.id}
-              </p>
-
-              <p className="mt-1 text-sm text-muted-foreground">
-                {solicitud.descripcion ||
-                  "Sin descripción"}
-              </p>
-            </div>
-
-            <EstadoSolicitudBadge
-              estado={solicitud.estado}
-            />
-          </div>
-
-          <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-            <span>
-              {formatDate(solicitud.fecha)}
-            </span>
-
-            {solicitud.cantidad_unidades && (
-              <span>
-                {formatNumber(
-                  solicitud.cantidad_unidades,
-                )}{" "}
-                unidades
-              </span>
-            )}
-
-            {solicitud.cantidad_kg && (
-              <span>
-                {formatNumber(
-                  solicitud.cantidad_kg,
-                )}{" "}
-                kg
-              </span>
-            )}
-
-            {solicitud.fecha_entrega && (
-              <span>
-                Entrega:{" "}
-                {formatDate(
-                  solicitud.fecha_entrega,
-                )}
-              </span>
-            )}
-          </div>
-        </div>
+      {/* Icono */}
+      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+        <ClipboardList className="h-4 w-4" />
       </div>
-    </Link>
+
+      {/* Información de la solicitud */}
+      <Link
+        to={`/comercial/requerimientos/${solicitud.id}`}
+        className="min-w-0 flex-1"
+      >
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="text-sm font-medium text-foreground">
+              Solicitud #{solicitud.id}
+            </p>
+
+            <p className="mt-1 text-sm text-muted-foreground">
+              {solicitud.descripcion || "Sin descripción"}
+            </p>
+          </div>
+
+          <EstadoSolicitudBadge
+            estado={solicitud.estado}
+          />
+        </div>
+
+        <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+          <span>
+            {formatDate(solicitud.fecha)}
+          </span>
+
+          {solicitud.cantidad_unidades && (
+            <span>
+              {formatNumber(solicitud.cantidad_unidades)} unidades
+            </span>
+          )}
+
+          {solicitud.cantidad_kg && (
+            <span>
+              {formatNumber(solicitud.cantidad_kg)} kg
+            </span>
+          )}
+
+          {solicitud.fecha_entrega && (
+            <span>
+              Entrega: {formatDate(solicitud.fecha_entrega)}
+            </span>
+          )}
+        </div>
+      </Link>
+
+      {/* Acción de comunicaciones */}
+      <div className="flex shrink-0 items-center">
+        <button
+          type="button"
+          onClick={() => onViewComunicaciones(solicitud)}
+          className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-xs font-medium text-foreground transition-colors hover:bg-secondary"
+          title={`Ver comunicaciones de la solicitud #${solicitud.id}`}
+        >
+          <MessageCircle className="h-4 w-4" />
+          <span className="hidden sm:inline">Comunicaciones</span>
+        </button>
+      </div>
+    </div>
   );
 }
 
